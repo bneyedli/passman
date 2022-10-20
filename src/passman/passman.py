@@ -14,6 +14,7 @@ from pathlib import Path
 
 from gnupg import GPG
 from parseargs import ParseArgs
+from pyotp import TOTP
 from pyperclip import copy as clipboard_copy
 from trapper import Trapper
 
@@ -51,8 +52,7 @@ class Crypto:
             file = self.gpg.decrypt(encrypted_file.read())
             secret_meta = json_loads(file.data)
 
-        clipboard_copy(secret_meta["password"])
-        logger.info("Secret copied to clipboard, user_id: %s", secret_meta["user_id"])
+        return secret_meta
 
     def encrypt_file(self):
         """
@@ -78,7 +78,7 @@ class Crypto:
         recipients = set(recipients)
         secret_meta = {}
         secret_meta["user_id"] = input("Enter user id: ")
-        secret_meta["password"] = getpass(prompt="Enter password: ")
+        secret_meta["secret"] = getpass(prompt="Enter password: ")
         encrypted_file = self.gpg.encrypt(
             json_dumps(secret_meta), output=self.file, recipients=recipients
         )
@@ -86,10 +86,25 @@ class Crypto:
         if encrypted_file.status == "encryption ok":
             logger.info("Success")
 
+    def generate_otp(self, secret: str) -> str:
+        """
+        Generate and verify OTP from given secret
+        """
+        totp = TOTP(secret)
+        code = totp.now()
+        if not totp.verify(code):
+            logger.error("Unable to verify TOTP")
+            raise SystemExit(1)
 
-if __name__ == "__main__":
+        return code
+
+
+def main():
+    """
+    Main function for cli invocation
+    """
     home = environ.get("HOME")
-    trapper = Trapper()
+    Trapper()
     app_metadata = {
         "name": "passman",
         "description": "Encrypt and decrypt password files on filesystems like kbfs.",
@@ -147,6 +162,20 @@ if __name__ == "__main__":
     crypto = Crypto(args)
 
     if args.read:
-        crypto.decrypt_file()
+        secret_meta = crypto.decrypt_file()
+        if args.secret_type == "passphrase":  # nosec - not a hardcoded secret
+            clipboard_copy(secret_meta["secret"])
+            logger.info(
+                "Secret copied to clipboard, user_id: %s", secret_meta["user_id"]
+            )
+        if args.secret_type == "otp":  # nosec - not a hardcoded secret
+            ot_pass = crypto.generate_otp(secret_meta["secret"])
+            clipboard_copy(ot_pass)
+            logger.info("One time password copied to clipboard")
+
     elif args.write:
         crypto.encrypt_file()
+
+
+if __name__ == "__main__":
+    main()

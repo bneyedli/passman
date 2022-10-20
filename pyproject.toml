@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "passman"
-version = "0.1.0"
+version = "0.1.2"
 description = "Cli tool to manage secrets on encrypted filesystem like kbfs"
 authors = ["Bryan Neyedli <bryan@bledsol.net>"]
 license = "BSD"
@@ -28,4 +28,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-passman = 'passman:main'
+pman = 'passman:main'

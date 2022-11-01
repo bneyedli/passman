@@ -39,7 +39,10 @@ class ParseArgs:  # pylint: disable=too-few-public-methods
         self.logger.debug(parser)
 
         arg_map = {}
-        arg_name = argument.get("switch")
+        arg_name = argument["switch"]
+
+        if "flag" in argument:
+            arg_name = [argument["flag"], arg_name]
 
         if "type" in argument:
             arg_map["type"] = argument["type"]
@@ -55,7 +58,7 @@ class ParseArgs:  # pylint: disable=too-few-public-methods
         arg_map["action"] = argument.get("action", "store")
 
         self.logger.debug(arg_map)
-        parser.add_argument(arg_name, **arg_map)
+        parser.add_argument(*arg_name, **arg_map)
 
     def parse_args(self) -> None:
         """Parse args and return collection"""

@@ -22,7 +22,8 @@ version-bump:
 	@poetry version $(PROJECT_BUMP_RULE)
 
 git-tag:
-	@git tag -s "v$$(poetry version -s)"
+	@git commit -a -m "v$$(poetry version -s)"
+	@git tag -s "v$$(poetry version -s)" -m "v$$(poetry version -s)"
 
 version: version-bump git-tag
 
